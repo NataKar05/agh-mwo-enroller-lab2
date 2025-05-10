@@ -2,6 +2,8 @@ package com.company.enroller.controllers;
 
 import java.util.Collection;
 
+import com.company.enroller.model.Participant;
+import com.company.enroller.persistence.ParticipantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,9 @@ public class MeetingRestController {
 
     @Autowired
     MeetingService meetingService;
+
+    @Autowired
+    ParticipantService participantService;
 
     //pobieram liste ze spotkaniami
     @RequestMapping(value = "", method = RequestMethod.GET)
@@ -65,4 +70,54 @@ public class MeetingRestController {
         meetingService.update(meeting);
         return new ResponseEntity<Meeting>(HttpStatus.OK);
     }
+
+    // pobieram uczestnikow spotkania
+    @RequestMapping(value = "/{id}/participants", method = RequestMethod.GET)
+    public ResponseEntity<?> getParticipants(@PathVariable("id") long id) {
+        Meeting meeting = meetingService.findById(id);
+        if (meeting == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(meeting.getParticipants(), HttpStatus.OK);
+    }
+
+    // dodaje uczestnika do spotkania
+    @RequestMapping(value = "/{id}/participants", method = RequestMethod.POST)
+    public ResponseEntity<?> addParticipant(
+            @PathVariable("id") long id,
+            @RequestParam(value = "login") String login) {
+
+        Meeting meeting = meetingService.findById(id);
+        Participant participant = participantService.findByLogin(login);
+
+        if (meeting == null || participant == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        meeting.addParticipant(participant);
+        meetingService.update(meeting);
+
+        return new ResponseEntity<>(HttpStatus.CREATED);
+    }
+
+    // usuwam uczestnika ze spotkania
+    @RequestMapping(value = "/{id}/participants/{login}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> removeParticipant(
+            @PathVariable("id") long id,
+            @PathVariable("login") String login) {
+
+        Meeting meeting = meetingService.findById(id);
+        Participant participant = participantService.findByLogin(login);
+
+        if (meeting == null || participant == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        meeting.removeParticipant(participant);
+        meetingService.update(meeting);
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+
 }
